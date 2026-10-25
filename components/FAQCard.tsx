@@ -7,9 +7,10 @@ interface FAQCardProps {
   question: string;
   answer: string;
   isTopResult?: boolean;
+  aiMatched?: boolean;
 }
 
-export function FAQCard({ category, question, answer, isTopResult }: FAQCardProps) {
+export function FAQCard({ category, question, answer, isTopResult, aiMatched }: FAQCardProps) {
   const { t } = useLanguage();
 
   return (
@@ -25,6 +26,11 @@ export function FAQCard({ category, question, answer, isTopResult }: FAQCardProp
         {isTopResult && (
           <span className="inline-block rounded-full bg-gold/30 text-stone-700 text-xs font-medium px-2 py-0.5">
             {t("Best match", "بہترین نتیجہ")}
+          </span>
+        )}
+        {aiMatched && (
+          <span className="inline-block rounded-full bg-brand/10 text-brand text-xs font-medium px-2 py-0.5">
+            {t("AI matched", "AI مشابہ")}
           </span>
         )}
       </div>

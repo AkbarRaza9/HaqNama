@@ -91,3 +91,15 @@ export interface FAQListResponse {
     answer: string;
   }>;
 }
+
+/** Response shape for the /api/chat endpoint (AI-enhanced matching) */
+export interface ChatResponse extends SearchResponse {
+  /** Suggested follow-up questions the user might ask next */
+  followUp: string[];
+  /** How confident the LLM was in its match (0-1) */
+  confidence: number;
+  /** Which FAQ slug was matched, or null if no good match */
+  matchedSlug: string | null;
+  /** Whether AI matching was used (false = fell back to keyword search) */
+  aiMatched: boolean;
+}
