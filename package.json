@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "init-db": "node data/init-db.mjs",
-    "test": "node --import ./test-resolver-register.mjs --test --experimental-strip-types lib/sensitive.test.ts"
+    "test": "node --import ./test-resolver-register.mjs --test --experimental-strip-types lib/*.test.ts"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",

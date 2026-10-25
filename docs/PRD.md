@@ -87,9 +87,12 @@ The MVP does one thing well: answer 10 approved questions. No accounts, no chat,
 ### FR-2: Search / query matching
 - A search bar lets the user type a question in either language.
 - Results are returned in ~300ms debounced as the user types.
-- Matching uses tag + keyword overlap scoring (tag match = 3 pts, question match = 2 pts, category match = 1 pt).
+- **Two-phase matching:**
+  1. **RAG matching** (if `ANTHROPIC_API_KEY` is configured): Claude semantically matches the query to the best FAQ. If confidence ≥ 0.5, that FAQ is placed first in results. The LLM only returns the FAQ slug — it never generates answer text.
+  2. **Keyword matching** (always runs as fallback): tag + keyword overlap scoring (tag match = 3 pts, question match = 2 pts, category match = 1 pt). Fills in remaining results.
 - The best match is visually highlighted with a "Best match" badge.
 - An empty query returns all FAQs in default order.
+- The API response shape (`SearchResponse`) is unchanged — RAG only affects which FAQ appears first.
 
 ### FR-3: Sensitive-topic helpline routing
 - When a user's query contains a registered sensitive keyword (e.g., "violence", "arrest", "میراث"), a helpline banner renders **above** the search results.
@@ -270,8 +273,7 @@ The sensitive-topic detection system is a safety-critical component. Its failure
 
 ### Out of scope (v1.0)
 - User accounts or login.
-- Free-text AI / LLM answers.
-- Chat interface.
+- Chat interface (separate from search).
 - Admin panel for editing content.
 - Analytics / usage tracking.
 - Push notifications.
@@ -279,7 +281,7 @@ The sensitive-topic detection system is a safety-critical component. Its failure
 - More than 10 FAQs.
 - More than 7 helplines.
 - Pashto, Sindhi, Balochi, Punjabi languages.
-- Voice input.
+- Voice input (deferred to v2.0).
 - Document templates or form downloads.
 
 ---
@@ -292,8 +294,12 @@ The sensitive-topic detection system is a safety-critical component. Its failure
 - Add province-specific content (procedures differ across Punjab, Sindh, KPK, Balochistan).
 - Add an admin-only content management interface (authenticated).
 
+### v1.1 (next)
+- Voice input via Web Speech API (speak question in Urdu or English instead of typing). Key differentiator for low-literacy and rural users.
+- Follow-up suggestion chips ("You might also ask...") powered by LLM.
+- Conversation history (multi-turn context within a session).
+
 ### v2.0
-- Free-text questions answered via RAG over the curated knowledge base (still with disclaimer + helpline routing).
 - Document checklist generator ("Here's what you need to bring to the NADRA office").
 - Multi-language support (Pashto, Sindh, Punjabi).
 - WhatsApp bot integration for users without smartphones capable of running a full web app.

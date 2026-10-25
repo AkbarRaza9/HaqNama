@@ -123,9 +123,7 @@ data/
 - **Sensitivity detection:** Three-layer model. (1) Normalize query (lowercase → strip Urdu diacritics → substitute Roman Urdu aliases from `roman_urdu_aliases`). (2) Net 1: scan against `sensitive_keywords` for category-specific matches → targeted helpline. (3) Net 2 (only if Net 1 empty): scan against `distress_lexicon` for general distress phrases → 1099 helpline. (4) Net 3: API route catches any detection error/timeout → 1099 banner (P0). Conservative by design — false positives are safer than false negatives. A 500 ms timeout guard throws on exceed (caught by Net 3).
 - **Bilingual:** Every content table has `_en` and `_ur` columns. The `LanguageContext` flips `<html dir>` to `rtl` for Urdu and applies the Noto Nastaliq font. The `t(en, ur)` helper renders the right string inline.
 - **API routes:** Both `force-dynamic` so they always read fresh from the DB (needed since the DB file can be regenerated).
-- **AI-enhanced matching (RAG):** `POST /api/chat` uses Claude (Anthropic API) to semantically match natural language queries to curated FAQs. The LLM only returns the matching FAQ slug — it never generates answers. Answers always come from the curated DB. Falls back to keyword search if `ANTHROPIC_API_KEY` is missing or the API call fails. **Cost:** ~$0.003/query with Claude Sonnet 4.5.
-- **Voice input:** Web Speech API (`SpeechRecognition`) lets users speak their question. Supports `ur-PK` and `en-US`. Gracefully degrades if the browser doesn't support it.
-- **Follow-up suggestions:** The LLM returns 2-3 follow-up questions shown as clickable chips below results.
+- **AI-enhanced matching (RAG):** The `/api/search` route uses Claude (Anthropic API) internally to semantically match natural language queries to curated FAQs. The LLM only returns the matching FAQ slug — it never generates answers. Answers always come from the curated DB. Falls back to keyword search if `ANTHROPIC_API_KEY` is missing or the API call fails. **Cost:** ~$0.003/query with Claude Sonnet 4.5. The response shape (`SearchResponse`) is unchanged — RAG only affects which FAQ appears first in results.
 
 ## Adding a new FAQ
 
@@ -222,9 +220,9 @@ Both commands must return results (appear in `.nft.json` trace files for both `/
 vercel --prod
 ```
 
-**Environment variables to set in Vercel** (if using AI matching):
-- `ANTHROPIC_API_KEY` — get from https://console.anthropic.com/settings/keys
-- Without this key, the app falls back to keyword search (still fully functional)
+**Optional environment variable for AI matching:**
+- `ANTHROPIC_API_KEY` — set in Vercel to enable Claude-powered semantic matching. Get a key at https://console.anthropic.com/settings/keys
+- Without this key, the app falls back to keyword search (still fully functional, just less accurate for natural language queries)
 
 ### Step 4 — Production curl matrix
 

@@ -2,14 +2,26 @@
 // Returns matching FAQs in the requested language, plus any sensitive-topic
 // helpline matches detected from the query.
 //
+// Matching strategy (in order):
+//   1. RAG matching (if ANTHROPIC_API_KEY is set): Claude semantically matches
+//      the query to the best FAQ. If confidence ≥ 0.5, that FAQ is placed
+//      first in results.
+//   2. Keyword matching (always runs): tag + keyword overlap scoring.
+//      If RAG already placed a match first, keyword results fill in the rest.
+//   3. Empty query returns all FAQs in default order.
+//
+// The response shape (SearchResponse) never changes — RAG only affects
+// which FAQ appears first in the results array.
+//
 // Safety (§7.4 P0): if sensitive-topic detection throws or times out,
 // the response includes the 1099 helpline as a fallback. FAQ results may
 // still be returned, but the banner is always present on error.
 
 import { NextRequest, NextResponse } from "next/server";
-import { getDisclaimer } from "@/lib/db";
+import { getAllFAQs, getDisclaimer } from "@/lib/db";
 import { detectSensitiveTopics } from "@/lib/sensitive";
 import { searchFAQs } from "@/lib/search";
+import { matchQueryToFAQ } from "@/lib/rag";
 import { searchQuerySchema } from "@/lib/validation";
 import type { Helpline, Lang, SearchResponse, SensitiveMatch } from "@/lib/types";
 
@@ -36,10 +48,6 @@ const FALLBACK_DISCLAIMER: Record<Lang, string> = {
   ur: "یہ معلومات صرف عام تعلیمی مقاصد کے لیے فراہم کی گئی ہیں اور قانونی مشورے کی جگہ نہیں لیتیں۔ اپنی صورت حال کے لیے مخصوص رہنمائی کے لیے براہ کرم کسی مستند وکیل سے رابطہ کریں یا اوپر دکھائے گئے ہیلپ لین پر کال کریں۔",
 };
 
-/**
- * Build the P0 fallback: surface the 1099 helpline so the banner renders
- * even when the detector itself fails. No DB call — returns unconditionally.
- */
 function buildFallbackSensitive(): SensitiveMatch[] {
   return [{ keyword: "__fallback__", helpline: FALLBACK_HELPLINE }];
 }
@@ -61,21 +69,17 @@ export async function GET(request: NextRequest) {
   }
 
   const { q: query, lang } = parsed.data;
+  const trimmedQuery = query.trim();
 
-  // Run FAQ search (never fails — pure in-memory scoring)
-  const results = searchFAQs(query, lang);
-
-  // Run sensitive detection with P0 fallback on error/timeout
+  // Run sensitive-topic detection (never fails — P0 fallback built in)
   let sensitive: SensitiveMatch[];
   try {
-    sensitive = await detectSensitiveTopics(query);
+    sensitive = await detectSensitiveTopics(trimmedQuery);
   } catch {
-    // §7.4 P0: detection failed → fall back to 1099 banner, never silent
     sensitive = buildFallbackSensitive();
   }
 
-  // §7.4 P0: if the DB read for the disclaimer fails, use the
-  // hardcoded fallback so the response is always complete.
+  // Get disclaimer (with P0 fallback)
   let disclaimer: string;
   try {
     disclaimer = getDisclaimer(lang);
@@ -84,21 +88,67 @@ export async function GET(request: NextRequest) {
   }
   if (!disclaimer) disclaimer = FALLBACK_DISCLAIMER[lang];
 
-  const response: SearchResponse = {
-    lang,
-    query,
-    disclaimer,
-    sensitive: sensitive.map((s) => ({
-      keyword: s.keyword,
-      helpline: s.helpline,
-    })),
-    results: results.map((r) => ({
+  // Build results array
+  const allFaqs = getAllFAQs();
+  let results: Array<{ slug: string; category: string; question: string; answer: string; score: number }> = [];
+
+  // Step 1: Try RAG matching (if API key is present)
+  let ragMatchedSlug: string | null = null;
+  if (trimmedQuery.length > 0) {
+    try {
+      const ragResult = await matchQueryToFAQ(trimmedQuery, allFaqs, lang);
+      if (ragResult && ragResult.confidence >= 0.5) {
+        const matchedFaq = allFaqs.find((f) => f.slug === ragResult.slug);
+        if (matchedFaq) {
+          results.push({
+            slug: matchedFaq.slug,
+            category: lang === "en" ? matchedFaq.category_en : matchedFaq.category_ur,
+            question: lang === "en" ? matchedFaq.question_en : matchedFaq.question_ur,
+            answer: lang === "en" ? matchedFaq.answer_en : matchedFaq.answer_ur,
+            score: Math.round(ragResult.confidence * 100),
+          });
+          ragMatchedSlug = matchedFaq.slug;
+        }
+      }
+    } catch {
+      // RAG failed — fall through to keyword search
+    }
+  }
+
+  // Step 2: Keyword search (always runs — fills in results or provides fallback)
+  const keywordResults = searchFAQs(trimmedQuery, lang);
+  for (const r of keywordResults) {
+    // Skip the FAQ that RAG already placed first (avoid duplicates)
+    if (r.slug === ragMatchedSlug) continue;
+    results.push({
       slug: r.slug,
       category: lang === "en" ? r.category_en : r.category_ur,
       question: lang === "en" ? r.question_en : r.question_ur,
       answer: lang === "en" ? r.answer_en : r.answer_ur,
       score: r.score,
+    });
+  }
+
+  // Step 3: If still no results (empty query), show all FAQs in default order
+  if (results.length === 0) {
+    results = allFaqs.map((f) => ({
+      slug: f.slug,
+      category: lang === "en" ? f.category_en : f.category_ur,
+      question: lang === "en" ? f.question_en : f.question_ur,
+      answer: lang === "en" ? f.answer_en : f.answer_ur,
+      score: 0,
+    }));
+  }
+
+  const response: SearchResponse = {
+    lang,
+    query: trimmedQuery,
+    disclaimer,
+    sensitive: sensitive.map((s) => ({
+      keyword: s.keyword,
+      helpline: s.helpline,
     })),
+    results,
   };
 
   return NextResponse.json(response);
