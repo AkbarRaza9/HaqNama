@@ -24,6 +24,10 @@ export default function HomePage() {
           const json: SearchResponse = await res.json();
           setData(json);
         }
+      } catch {
+        // Network error or API failure — silently degrade.
+        // The error boundary will catch any render-time crash;
+        // this catch prevents an unhandled promise rejection.
       } finally {
         setLoading(false);
       }
