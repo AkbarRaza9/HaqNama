@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Noto Nastaliq for Urdu text */
+@import url("https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap");
+
+:root {
+  --direction: ltr;
+}
+
+/* Urdu mode: flip direction and use Nastaliq */
+[dir="rtl"] {
+  --direction: rtl;
+}
+
+[dir="rtl"] body {
+  font-family: "Noto Nastaliq Urdu", "Jameh Nastaliq", serif;
+  line-height: 2.2;
+}
+
+/* Smooth scrolling for anchor jumps */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Answer text: render paragraph breaks stored as \n\n in the DB */
+.answer-text {
+  white-space: pre-line;
+}
