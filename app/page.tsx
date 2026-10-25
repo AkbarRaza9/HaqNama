@@ -46,11 +46,11 @@ export default function HomePage() {
     };
   }, [query, lang, fetchResults]);
 
-  // Initial load (empty query = show all FAQs)
+  // Initial load (empty query = show all FAQs) — runs once on mount
   useEffect(() => {
     fetchResults("", lang);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang]);
+  }, []);
 
   const sensitive: SensitiveMatch[] = data?.sensitive ?? [];
   const results = data?.results ?? [];

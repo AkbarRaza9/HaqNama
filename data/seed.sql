@@ -4,14 +4,14 @@
 -- ─────────────────────────────────────────────
 -- Disclaimers
 -- ─────────────────────────────────────────────
-INSERT INTO disclaimers (id, lang, body) VALUES
+INSERT OR IGNORE INTO disclaimers (id, lang, body) VALUES
 (1, 'en', 'This information is provided for general educational purposes only and does not constitute legal advice. Laws and procedures change over time and may vary by province. For advice specific to your situation, please consult a qualified lawyer or contact the helpline shown above.'),
 (2, 'ur', 'یہ معلومات صرف عام تعلیمی مقاصد کے لیے فراہم کی گئی ہیں اور قانونی مشورے کی جگہ نہیں لیتیں۔ قوانین اور طریقے وقت کے ساتھ بدلتے رہتے ہیں اور صوبے کے لحاظ سے مختلف ہو سکتے ہیں۔ اپنی صورت حال کے لیۏ مخصوص رہنمائی کے لیے براہ کرم کسی مستند وکیل سے رابطہ کریں یا اوپر دکھائے گئے ہیلپ لین پر کال کریں۔');
 
 -- ─────────────────────────────────────────────
 -- Helplines
 -- ─────────────────────────────────────────────
-INSERT INTO helplines (id, name_en, name_ur, number, hours_en, hours_ur, notes_en, notes_ur) VALUES
+INSERT OR IGNORE INTO helplines (id, name_en, name_ur, number, hours_en, hours_ur, notes_en, notes_ur) VALUES
 (1, 'Madadgaar National Helpline', 'مددگار قومی ہیلپ لین', '1098',
  '24 hours, 7 days', '24 گھنٹے، 7 دن',
  'For women and children facing violence, abuse, or distress.', 'خواتین اور بچوں کے لیے جو تشدد، یا مشکل صورت حال کا سامنا کر رہے ہوں۔'),
@@ -38,7 +38,7 @@ INSERT INTO helplines (id, name_en, name_ur, number, hours_en, hours_ur, notes_e
 -- Sensitive keywords → helplines
 -- keyword is matched case-insensitively against the user query.
 -- ─────────────────────────────────────────────
-INSERT INTO sensitive_keywords (keyword, lang, helpline_id) VALUES
+INSERT OR IGNORE INTO sensitive_keywords (keyword, lang, helpline_id) VALUES
 -- Domestic / gender-based violence
 ('violence',     'en', 1),
 ('abuse',        'en', 1),
@@ -86,7 +86,7 @@ INSERT INTO sensitive_keywords (keyword, lang, helpline_id) VALUES
 -- They are matched against the normalized (lowercased,
 -- diacritic-stripped, alias-substituted) query.
 -- ─────────────────────────────────────────────
-INSERT INTO distress_lexicon (term, lang) VALUES
+INSERT OR IGNORE INTO distress_lexicon (term, lang) VALUES
 -- English
 ('i am not safe',    'en'),
 ('not safe',         'en'),
@@ -158,7 +158,7 @@ INSERT INTO distress_lexicon (term, lang) VALUES
 -- a user typing "tashaddud" matches the keyword "تشدد".
 -- Aliases are matched longest-first with word boundaries.
 -- ─────────────────────────────────────────────
-INSERT INTO roman_urdu_aliases (alias, canonical, lang) VALUES
+INSERT OR IGNORE INTO roman_urdu_aliases (alias, canonical, lang) VALUES
 -- Violence → تشدد
 ('tashaddud',   'تشدد', 'ur'),
 ('tashadud',    'تشدد', 'ur'),
@@ -204,7 +204,7 @@ INSERT INTO roman_urdu_aliases (alias, canonical, lang) VALUES
 -- ─────────────────────────────────────────────
 -- 10 Approved FAQs
 -- ─────────────────────────────────────────────
-INSERT INTO faqs (slug, category_en, category_ur, question_en, question_ur, answer_en, answer_ur, tags_en, tags_ur, sort_order) VALUES
+INSERT OR IGNORE INTO faqs (slug, category_en, category_ur, question_en, question_ur, answer_en, answer_ur, tags_en, tags_ur, sort_order) VALUES
 ('apply-for-cnic',
  'Identity Documents', 'شناختی دستاویزات',
  'How do I apply for a CNIC or NICOP?',

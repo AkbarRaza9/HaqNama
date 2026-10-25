@@ -10,11 +10,9 @@ import { dirname, join } from "node:path";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dbPath = join(__dirname, "haqnama.db");
 
-// Remove any existing DB so the seed runs cleanly (plain INSERT, not INSERT OR IGNORE).
-// This makes init-db truly idempotent — safe to run repeatedly.
-if (existsSync(dbPath)) {
-  rmSync(dbPath);
-}
+// DB file is created if it doesn't exist; INSERT OR IGNORE in seed.sql handles
+// idempotency safely. No need to delete the file — this also avoids lock issues
+// when a dev server has the file open.
 
 const schema = readFileSync(join(__dirname, "schema.sql"), "utf8");
 const seed = readFileSync(join(__dirname, "seed.sql"), "utf8");
